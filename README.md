@@ -12,7 +12,6 @@ commands for easy user interface, and MongoDB to store user workout related data
 
 ## Python file Overview
  1. main.py
- 2. 
     - Starts the bot and loads all commands in the /cmds folder
     - Indicates the bot has started with a message("Hello") on a secified channel
     - syncs slash commands so it shows up in the user interface
