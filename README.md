@@ -40,7 +40,8 @@ commands for easy user interface, and MongoDB to store user workout related data
 - Python 3.10+
 - MongoDB account
 - .env file with these variables specified:
-  DISCORD_API_TOKEN=your_discord_token_here
+  - DISCORD_API_TOKEN=your_discord_token_here
+
   DB_username=your_mongo_username
   DB_password=your_mongo_password
   MONGODB_PASSWORD=your_mongo_password
