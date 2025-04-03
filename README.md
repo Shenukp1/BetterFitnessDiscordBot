@@ -11,14 +11,18 @@ commands for easy user interface, and MongoDB to store user workout related data
  6. Download your logged data
 
 ## Python file Overview
- 1. main.py
-    - Starts the bot and loads all commands in the /cmds folder
-    - Indicates the bot has started with a message("Hello") on a secified channel
-    - syncs slash commands so it shows up in the user interface
+### `main.py`
+- Starts the bot and loads all commands in the /cmds folder
+- Indicates the bot has started with a message("Hello") on a secified channel
+- syncs slash commands so it shows up in the user interface
 
- 3. workout.py
-    handles all the 
-    - 
+### `main.py`
+- Starts the bot and connects it to Discord
+- Loads command files from the `cmds/` folder
+- Sends a greeting in a channel when it starts
+- Syncs slash commands with the test server
+
+
     
 
  
