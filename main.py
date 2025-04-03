@@ -1,8 +1,8 @@
-import setting #allows us to use the variables in settings
-import discord
+import setting # allows us to use the variables in settings such as directory paths or API keys
+import discord 
 from discord.ext import commands
 import asyncio
-from db import users_collection
+
 
 """
 RESOURCES:
@@ -22,58 +22,60 @@ RESOURCES:
 
 #==================Discord Stuff==================#
 
-#initalizes the bot
+# this is how the discord bot is set up and runs
 def run():
-    #discord required commands to make bot work
-    intents = discord.Intents.default()
-    intents.message_content = True #THIS IS A MUST, allows bot to read user messages
-    intents.messages = True
-    intents.guilds = True
-    bot = commands.Bot(command_prefix='!', intents=intents)#prefix used for commands
+    # discord required commands to make bot work
+    # grabs all the intents permissions the bot uses
+    intents = discord.Intents.default()     # then makes message_content true to read commands
+    intents.message_content = True          # allows bot to read user messages
+    intents.messages = True                 # good to have this True
+    intents.guilds = True                   # good to have this True
+    bot = commands.Bot(command_prefix='!', intents=intents) # prefix used for commands. so bot commands start with !
 
-    #registering all users
-    #first we need to load old users into an array
-    #then we need to compare that array with the new set of user we want to add
-    """
-    Example of how to inset into db:
-        users = [
-        {"name": "Alice", "email": "alice@example.com", "age": 30},
-        {"name": "Bob", "email": "bob@example.com", "age": 28},
-        {"name": "Charlie", "email": "charlie@example.com", "age": 22}
-        ]
-
-        result = users_collection.insert_many(users)
-        print(f"Inserted user IDs: {result.inserted_ids}")
-
-
-    Thinking:
-        users = [
-        {"User_id": "Discord_id", "Push(OW)": "link_to_push_collection", "age": 30},
-        {"name": "Bob", "email": "bob@example.com", "age": 28},
-        {"name": "Charlie", "email": "charlie@example.com", "age": 22}
-        ]
-    """
+    # registering all users
+    # first we need to load old users into an array
+    # then we need to compare that array with the new set of user we want to add
+ 
     
 
 
-
+    # this function runs when the bot connects
     @bot.event
     async def on_ready():
         print("We Are Running!")
 
         
-        #going over all the files in cmds folder
+        # going over all the files in cmds folder
+        # then loads the commands from each file
         for cmd_file in setting.CMDS_DIR.glob("*.py"):
-            if cmd_file.name != "__init__.py": #dont want init.py
-                await bot.load_extension(f"cmds.{cmd_file.name[:-3]}")#:-3 is do not give last three character(.py)
+            if cmd_file.name != "__init__.py":                          # dont want init.py
+                await bot.load_extension(f"cmds.{cmd_file.name[:-3]}")  # :-3 is do not give last three character(.py)
         
+        # get the channel to send messages to, and sends 'Hello'
+        # to show that the bot is active
         starting = bot.get_channel(1137190101684850768)
-        await starting.send("Hello!")
+        await starting.send("Hello!")                   # TODO: explain what bot does when it starts
 
-        print("Loaded commands:", [command.name for command in bot.commands])# shows the loaded commands - a check
+        # prints all the loaded commands to make sure all the commands
+        # were loaded correctly
+        print("Loaded commands:")
+        for command in bot.commands:
+            print(f"- {command.name}")
+
+
+        # TODO: when ready to deploy remove this code
+        # this makes it so that if you are testing commands
+        # the commands are only on the server the bot is in
         bot.tree.copy_global_to(guild=setting.GUILDS_ID)
-        await bot.tree.sync(guild=setting.GUILDS_ID)#need this for tree stuff
-    #starting bot
+
+        # this makes it so that the slash commands show up in the
+        # user interface of discord
+        # when ready to deploy remove'guild=setting.GUILDS_ID' because
+        # TODO: that makes it so that the commands are synced only on the server
+        # the bot is in
+        await bot.tree.sync(guild=setting.GUILDS_ID)
+
+    # starting bot when the token is passed
     bot.run(setting.DISCORD_API_SECRET)
 
 

@@ -24,23 +24,33 @@ NOTES:
 """
 
 
-# Encode them to be URL-safe
+# this makes it so no one can see passwords
 encoded_username = urllib.parse.quote_plus(setting.DB_USERNAME)
 encoded_password = urllib.parse.quote_plus(setting.DB_PASSWORD)
 
-# Construct the correct MongoDB connection string
+# Construct the correct MongoDB connection string to get access to the mongodb
 MONGO_URI = f"mongodb+srv://{encoded_username}:{encoded_password}@discordbot.met5y.mongodb.net/?retryWrites=true&w=majority&appName=Discordbot"
 
-# Creating a client instance
+# creating a client instance so we can access the databases
 client = MongoClient(MONGO_URI)
 
-# The database we want to use
+# getting the database we want to use
 db = client["bot"]
 
-#Selecting the Users collection
+# TODO: remove because they might not be important
 users_collection = db["Users"]
 workouts_collection = db["Users"]
 
+# the purpose of the overarching workouts database is to
+# only allow the user to remember the workouts they have
+# created and then to easily log workouts
 ow_collection = db["overarching_workouts"]
+
+# the purpose of this collection is to log the workouts
+# as in keep track of the weights, sets, reps a user did for
+# individual workouts(e.g. Inclined dumbell press) within the
+# overarching workout(e.g. Push)
 log_collection = db["workout_logs"]
-#can add more collections as needed
+
+
+# can add more collections as needed

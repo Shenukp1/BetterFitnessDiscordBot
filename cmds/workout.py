@@ -7,33 +7,36 @@ from db import log_collection
 from datetime import datetime
 import ast  #safe parsing
 """
-In this file, I want to collect all the workouts a user does. I will allow them
-to catogorize their workouts such that they will have a overarching name(e.g. Push, Shoulder, Back,...etc), and then
-the individual names(e.g. Inclined Chest Press, Shoulder Press,...etc) of the workout. 
-    1.User can create an overarching workout.
-    2.User must add to that overarching workout, individual works with predetermined
-      sets, reps, and rest they want to meet. this is basically creating a template to input
-      easily.
-        2.2 Input -> Individual Workout Name:  Sets:  Reps:  RestTime:
+In this file, the functionality of discord commands are made. such as the discord command 
+to make a create an overaching workout(e.g. Push), and sub workouts within that overarching
+workout(e.g. Incline Chest Press).
+
+This file also creates functionality of logging a workout using discord commands.Once they are 
+logged, they are saved on MongoDB(database)
+
+
+
+In this file all the workout Inputs and Outputs are handled. 
+    Inputs:
+        1. creating a workout (e.g. Commands: createow )
+        2. starting a workout (e.g. Commands: logworkout )
+        3. downloading file to input into database
+    
+    Outputs:
         
-
-what will always stay constant is set and time of rest after the user enter the individual workout.
-for each set the user will record the reps, weight. (additional Idea) before the next set, a time for
-the rest will start.
-
-there will be a feature where once they made multiple individual workouts within the overaching workout(OW),they can start it. once they start OW, they will go through all the individual
-workouts within the OW and input the reps, and weight before the next set. before every set, a timer will go off, 
-which is the rest timer, and after it finishes, the user will be prompted to tell the reps and weight for the next set. 
-
-the user can edit these workouts aswell.
-
-
 NOTES:
     1. user_id = interaction.user.id  # Get the user's ID
     2. user_name = interaction.user.name  # Get the user's name (optional)
+    2.  ephemeral=True - makes it so that you can only see the message. for example: 
+        await interaction.response.send_message(f"{text_to_send}", ephemeral=True)
+
+TODO
+    1.TODO: let the user see there past x(gotta figure out how far back we
+            we can save) workouts for there Overarching workout 
+    2.TODO: downloading there previous x workouts before its deleted
+
 
 HOW THE DB ORGANIZES EVERYTHING
-    
     1. The creates their own Overarching workout(OW) template. Overarching Workouts can be named anything
         but for example an OW can be 'push'. 
     2. then within the OW 'push', there can be individual workout(IW) such as, 'inclined dumble press',
@@ -44,6 +47,10 @@ HOW THE DB ORGANIZES EVERYTHING
 
     5. then when the do 4. , this saves the infromation they inputted in a orangized manner in the database. so multiple occurance of "push" can be
         in the database
+
+HOW DOWNLOADING AND UPLOADING WILL WORK
+    1. 
+
 """
 
 
@@ -52,18 +59,98 @@ HOW THE DB ORGANIZES EVERYTHING
 
 
 
-#this is to create the overaching workout
+
 def create_overarching_workout(user_id, ow_name):
+
+    """
+    This function adds a new overarching workout(OW)(e.g. Push,Pull,Back...etc.)
+    to the database.
+
+    This function creates a template that serves as a blueprint for logging workouts. 
+    However, it does not directly log a workout into the collection. Instead, it sets up 
+    placeholders that are used later when the actual workout logging function is called.
+
+
+    user_id: identifies the user to the OW that they want to create
+    ow_name: name of the ow that they want to create
+
+
+
+    """
+    
+    # checking if the overarching workout already exist within the database
+    # if it does, gives a string for the discord bot to display to user
+    # that it already exist under that user
+    existing_workout = ow_collection.find({"user_id":user_id,"name":ow_name})
+    if existing_workout:
+        return f"Workout '{ow_name}' already exists."
+    
+    
+    # If the workout doesnt exist, we are going to create that workout 
+    # within the database and then link that workout to the discord
+    # user through user_id and then give the overarching workout
+    # a name based on what the user put in
     ow_data = {
         "user_id": user_id,
         "name": ow_name,
         "individual_workouts": []
     }
-    result = ow_collection.insert_one(ow_data)
-    return result.inserted_id
+    # this is the 'link' to the database where ALL the overarching workouts 
+    # are created
+    ow_collection.insert_one(ow_data)
+    return f"Workout '{ow_name}' has been created."
+
+
+
 
 #this is to add an indivdiual workout to the OW
 def add_individual_workout(user_id, ow_name, iw_name, rest_timer, sets, reps):
+
+    """
+    This function adds an individual workout(IW)(e.g. Inclined Chest Press) to 
+    an existing OW(e.g. Push).
+
+    This function creates a template that serves as a blueprint for logging workouts. 
+    However, it does not directly log a workout into the collection. Instead, it sets up 
+    placeholders that are used later when the actual workout logging function is called.
+
+    The user can add as many individual workouts they want to an OW.
+
+    user_id: identifies the user to the IW that they want to create
+    ow_name: tell the database which OW the IW will be under
+    iw_name: name of the individual workout(IW)
+    rest_timer: the time they took to rest between sets
+    sets: the number of sets they have for the IW
+    reps: the number of reps they do per set
+
+
+    
+    """
+    
+    # checks if the individual workout exist already.
+    # $elemMatch is used to find an exact match of the name only
+    # as in, you can only create one individual workout with the same name
+    # you cannot have multiple IW with the same name but 
+    # different preset_rest_timer sets, reps
+    existing_workout = ow_collection.find_one({
+        "user_id": user_id,
+        "name": ow_name,
+        "individual_workouts": {
+            "$elemMatch": {
+                "name": iw_name
+            }
+        }
+    })
+    
+
+    # if the workout exist, the discord command will recieve an string
+    # to let the user know it already exists
+    if existing_workout:
+        return f"Workout '{iw_name}' already exists."
+    
+
+    # if it doesnt exist, we are going to create a IW
+    # with the users specified rest_timer, sets, and reps
     ow_collection.update_one(
         {"user_id": user_id, "name": ow_name},
         {"$push": {
@@ -78,8 +165,12 @@ def add_individual_workout(user_id, ow_name, iw_name, rest_timer, sets, reps):
 
 
 
-#this allows a user to log there workout
+
 def log_workout(user_id, ow_name, iw_name, sets):
+
+    """
+    
+    """
     try:
         sets_list = ast.literal_eval(sets)  # Safe parsing of string input
 
@@ -101,7 +192,7 @@ def log_workout(user_id, ow_name, iw_name, sets):
 
 
 
-#need this function for autocomplete for overarching workouts
+#need this function for autocomplete for overarching workouts for the user of the bot only
 def get_overarching_workouts(user_id):
     workouts = ow_collection.find({"user_id": user_id}, {"_id": 0, "name": 1})
     return [workout["name"] for workout in workouts]
@@ -117,18 +208,14 @@ def get_individual_workouts(user_id, ow_name):
     return []
 
 
+    #================DISCORD COMMANDS BELOW================#
+
 
 #TODO:make it so i can only see the slash commands
 class Workout(app_commands.Group):
 
-
     
 
-    #Creating an overarching workout category
-    @app_commands.command()
-    async def say(self, interaction: discord.Interaction, text_to_send:str, reps:str):
-        #ephemeral = True means only you can see the message
-        await interaction.response.send_message(f"{text_to_send}", ephemeral=True)
     #================Handles Creating Workouts================#
 
     #Slash that allows user to create a overarching workouts(OW)
@@ -137,11 +224,16 @@ class Workout(app_commands.Group):
     ow_name="Enter the overarching workout name",
     )
     async def createow(self, interaction: discord.Interaction, ow_name: str):
-
+        """
+        This function creates a new overarching workout(OW)(e.g. Push,Pull,Back...etc.) for users of the bot
+            Errors to consider:
+                
+        
+        """
         user_id = str(interaction.user.id)#this get the user that did the commands id
-        create_overarching_workout(user_id, ow_name)
+        response = create_overarching_workout(user_id, ow_name)
 
-        await interaction.response.send_message(f"You have created: {ow_name}")
+        await interaction.response.send_message(response)
 
 
 
@@ -158,8 +250,11 @@ class Workout(app_commands.Group):
 
         await interaction.response.send_message(f"You have created: {ow_name}")
     
-    #this allows for autocompletion for OW
-    @createiw.autocomplete("ow_name")
+
+
+    
+    #this allows for autocompletion for OW in createiw
+    @createiw.autocomplete("ow_name")#you put in the name of what var you want to autocomplete
     async def ow_autocomplete(self,interaction: discord.Interaction, current: str):
         user_id = str(interaction.user.id)
         workouts = get_overarching_workouts(user_id)
@@ -184,7 +279,7 @@ class Workout(app_commands.Group):
         await interaction.response.send_message(response)
 
 
-    #this allows for autocompletion for OW
+    #this allows for autocompletion for OW logging
     @logworkout.autocomplete("ow_name")
     async def ow_autocomplete(self,interaction: discord.Interaction, current: str):
         user_id = str(interaction.user.id)
@@ -209,8 +304,22 @@ class Workout(app_commands.Group):
         return [
             app_commands.Choice(name=workout, value=workout)
             for workout in workouts if current.lower() in workout.lower()
-        ]
+            ]
+    
+    #================Shows Workouts================#
 
+    #showing IW for the past month 
+    #Slash that allows user to Log OW
+    @app_commands.command(name="showorkout", description="show your workout")
+    @app_commands.describe(
+    ow_name="Enter the overarching workout name",
+    iw_name="Enter the individual workout name",
+    sets="Enter sets in the format [(reps, weight), (reps, weight)]"
+    )
+    async def logworkout(self, interaction: discord.Interaction, ow_name: str, iw_name: str, sets: str):
+        user_id = str(interaction.user.id)
+        response = log_workout(user_id, ow_name, iw_name, sets)
+        await interaction.response.send_message(response)
 
 
 
