@@ -169,6 +169,7 @@ def add_individual_workout(user_id, ow_name, iw_name, rest_timer, sets, reps):
 def log_workout(user_id, ow_name, iw_name, sets):
 
     """
+
     
     """
     try:
@@ -208,65 +209,131 @@ def get_individual_workouts(user_id, ow_name):
     return []
 
 
+
+
+
+
     #================DISCORD COMMANDS BELOW================#
 
 
 #TODO:make it so i can only see the slash commands
 class Workout(app_commands.Group):
+    """
+    This is a class that groups multiple slash commands under the same
+    category(e.g. workouts). The user would use "/workout name_of_command"
+    to use a command that are avaliable.
+
+    Functionality to add:
+        1. TODO: list all commands and what they do
+
 
     
+    """
 
     #================Handles Creating Workouts================#
 
-    #Slash that allows user to create a overarching workouts(OW)
+    # @app_commands.command is a way to add better user interface, such as a description
+    # about what the command does.
+    # @app_commands.describe tell the user what they need to enter
     @app_commands.command(name="createow", description="create your overarching workout(OW) - e.g. Push,Back,Pull...")
     @app_commands.describe(
-    ow_name="Enter the overarching workout name",
+    ow_name="Enter the overarching workout name - e.g. Push,Back,Pull...",
     )
     async def createow(self, interaction: discord.Interaction, ow_name: str):
         """
-        This function creates a new overarching workout(OW)(e.g. Push,Pull,Back...etc.) for users of the bot
+        This function is used to preform a slash command  to create a new 
+        overarching workout(OW)(e.g. Push,Pull,Back...etc.) for users
+
+        interaction: discord object used for slash commands
+        ow_name: the overarching workout name given by the user
+        
+
+        The Command: /workout createow
+
+
             Errors to consider:
                 
         
         """
-        user_id = str(interaction.user.id)#this get the user that did the commands id
-        response = create_overarching_workout(user_id, ow_name)
+        
+        user_id = str(interaction.user.id)  # gets the ID of the user that used the command /workout createow
+        response = create_overarching_workout(user_id, ow_name) # this then call the function to create the OW in the database
 
-        await interaction.response.send_message(response)
+        await interaction.response.send_message(response) # returns a response to the user based on what the  create_overarching_workout returned
 
 
 
 
-    #Slash that allows user to create a individual workouts within OW
     @app_commands.command(name="createiw", description="create your Individual workout for OW - for Push(OW) e.g. Inclined dumbel press")
     @app_commands.describe(
     ow_name="Enter the Individual workout name",
     )
     async def createiw(self, interaction: discord.Interaction,ow_name: str, iw_name: str, rest_timer:str,sets:str,reps:str):
+        """
+        This function is used to preform a slash command  to create a new 
+        individual workout(IW)(e.g. Inclined Dumbell Press, Cable Rows, Leg Press...etc.)
+        Within the OW(e.g. Push,Pull..)that the user specified. This is to create a template
+        to log the workouts later.
 
-        user_id = str(interaction.user.id)#this get the user that did the commands id
-        add_individual_workout(user_id, ow_name, iw_name, rest_timer, sets, reps)
+        interaction: discord object used for slash commands
+        ow_name: the overarching workout name given by the user but also autocompleted
+        iw_name: name of the individual workout(IW)
+        rest_timer: the time they took to rest between sets
+        sets: the number of sets they have for the IW
+        reps: the number of reps they do per set
 
-        await interaction.response.send_message(f"You have created: {ow_name}")
+        The Command: /workout createiw
+
+        
+        """
+        # grabs the user_id and the calls the function with the correct params
+        user_id = str(interaction.user.id)
+        response = add_individual_workout(user_id, ow_name, iw_name, rest_timer, sets, reps)
+
+        await interaction.response.send_message(f"{response}")
     
 
 
-    
-    #this allows for autocompletion for OW in createiw
-    @createiw.autocomplete("ow_name")#you put in the name of what var you want to autocomplete
+    # @createiw.autocomplete allows for autocompletion of the specified param and function
+    # as you can see it follows @functionName.autcomplete('varNameWithinFun').
+    # in this case it would be any ow_name param
+    @createiw.autocomplete("ow_name")# you put in the name of what var you want to autocomplete
     async def ow_autocomplete(self,interaction: discord.Interaction, current: str):
+        """
+        This function allows autocomplete when the user is typing for the string 
+        ow_name in "/workout createiw"
+
+        interaction: discord object used for slash commands
+        current: give us what the user is typing
+        
+        """
+
+        # based on the user_id we are going to call get_overarching_workouts func
+        # that gets all the overarching workouts under the user in the database
         user_id = str(interaction.user.id)
         workouts = get_overarching_workouts(user_id)
-        return [
-            app_commands.Choice(name=workout, value=workout)
-            for workout in workouts if current.lower() in workout.lower()
-        ]
+
+        
+        choices = [] # creating a list to hold the Choice objects
+        # we are then going to check if what input the user is writing 
+        # is within the OW they created.
+        for workout in workouts:
+            if current.lower() in workout.lower():# if pu(what the user wrote or is typing) in push(whats in the database)
+
+                # Choice is a discord object. 
+                # name: the dropdown text that is shown(e.g., Push)
+                # value: this is the value that get pass to the command that is uses autocomplete
+                # so ow_name will get passed that value(e.g., Push) that the user click on when the dropdown is shown
+                choice = app_commands.Choice(name=workout, value=workout)
+                choices.append(choice)  # this allows for the user to be displayed all the OW they created
+        
+        return choices
+
 
 
     #================Handles Logging Workouts================#    
 
-    #Slash that allows user to Log OW
+
     @app_commands.command(name="logworkout", description="Log your workout with multiple sets")
     @app_commands.describe(
     ow_name="Enter the overarching workout name",
@@ -274,43 +341,82 @@ class Workout(app_commands.Group):
     sets="Enter sets in the format [(reps, weight), (reps, weight)]"
     )
     async def logworkout(self, interaction: discord.Interaction, ow_name: str, iw_name: str, sets: str):
+
+        """
+        This function logs the workout for the for the workouts templates that
+        are already created.
+
+        interaction: discord object used for slash commands
+        ow_name: name of the overarching workout 
+
+
+        Functionality to Consider:
+            1. TODO: what if they want to enter there sets one at a time. but we want to make 
+                     sure that it is added under the same OW, IW. might have to look at log workout
+
+
+
+
+        
+        """
+
         user_id = str(interaction.user.id)
         response = log_workout(user_id, ow_name, iw_name, sets)
         await interaction.response.send_message(response)
 
 
-    #this allows for autocompletion for OW logging
+    
     @logworkout.autocomplete("ow_name")
     async def ow_autocomplete(self,interaction: discord.Interaction, current: str):
+
+        """
+        function that allows for autocompletion for OW logging
+        
+        """
+
         user_id = str(interaction.user.id)
         workouts = get_overarching_workouts(user_id)
-        return [
-            app_commands.Choice(name=workout, value=workout)
-            for workout in workouts if current.lower() in workout.lower()
-        ]
+        choices = []
+        for workout in workouts:
+            if current.lower() in workout.lower():
+                choice = app_commands.Choice(name=workout, value=workout)
+                choices.append(choice)
 
-    #autocompletion is done based on the selected OW
+        return choices
+        
+        
     @logworkout.autocomplete("iw_name")
     async def iw_autocomplete(self,interaction: discord.Interaction, current: str):
+
+        """
+        function that allows autocompletion based on the selected OW in logworkout
+        """
+
         user_id = str(interaction.user.id)
+        
+        selected_ow = interaction.namespace.ow_name  # this gets the the input that is put in for OW using interaction.namespace
 
-        #Extract the previously selected OW from interaction.namespace
-        selected_ow = interaction.namespace.ow_name  
+        choices = []
 
+        # this make it so that if there is no OW selected, then it will
+        # show no dropdown option for IW
         if not selected_ow:
-            return []
+            return choices
 
         workouts = get_individual_workouts(user_id, selected_ow)
-        return [
-            app_commands.Choice(name=workout, value=workout)
-            for workout in workouts if current.lower() in workout.lower()
-            ]
+        choices = []
+        for workout in workouts:
+            if current.lower() in workout.lower():
+                choice = app_commands.Choice(name=workout, value=workout)
+                choices.append(choice)
+
+        return choices
     
     #================Shows Workouts================#
 
-    #showing IW for the past month 
-    #Slash that allows user to Log OW
-    @app_commands.command(name="showorkout", description="show your workout")
+    # TODO Implementation for show workouts required
+   
+    @app_commands.command(name="showorkout", description="shows your past 3 workouts for individual workouts")
     @app_commands.describe(
     ow_name="Enter the overarching workout name",
     iw_name="Enter the individual workout name",
@@ -318,13 +424,17 @@ class Workout(app_commands.Group):
     )
     async def logworkout(self, interaction: discord.Interaction, ow_name: str, iw_name: str, sets: str):
         user_id = str(interaction.user.id)
-        response = log_workout(user_id, ow_name, iw_name, sets)
+        response = get_log_workout(user_id, ow_name, iw_name, sets)# TODO: implement function
         await interaction.response.send_message(response)
 
 
 
 
 async def setup(bot):
-    #name= name of the all the commands when you do /
-    #description is text about the commands that show
+    """
+    This function is responsible for regisetering all the workout commands under
+    the workout class function. such that all the subcommands(e.g. createow, createiw,...)
+    appear under "/workout subCommandsHere".
+    
+    """
     bot.tree.add_command(Workout(name="workout",description="Workout Commands"))
