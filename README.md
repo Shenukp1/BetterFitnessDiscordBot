@@ -41,12 +41,35 @@ commands for easy user interface, and MongoDB to store user workout related data
 - MongoDB account
 - .env file with these variables specified:
   - DISCORD_API_TOKEN=your_discord_token_here
+  - DB_username=your_mongo_username
+  - DB_password=your_mongo_password
+  - MONGODB_PASSWORD=your_mongo_password
+  - GUILDS=your_server_id
 
-  DB_username=your_mongo_username
-  DB_password=your_mongo_password
-  MONGODB_PASSWORD=your_mongo_password
-  GUILDS=your_server_id
+### Install Dependencies
+- pip install -r requirements.txt
 
-    
+### Run the bot
+- python main.py
+
+## How to use the Commands
+### Create Workouts
+- /workout createow ow_name:Push
+  - Creates a template for your "Push" workout day
+- /workout createiw ow_name:Push iw_name:Inclined Dumbbell Press rest_timer:90s sets:4 reps:10
+  - Adds "Inclined Dumbbell Press" under "Push", a template for logworkout to follow
+
+### Log workouts
+- /workout logworkout ow_name:Push iw_name:Inclined Dumbbell Press sets:[(10, 40), (8, 45)]
+  - Logs the sets you performed for that exercise
+
+### Download file
+
+### Show past workouts
+
+
+## Resources
+- Discord:https://www.youtube.com/watch?v=eLcAZIeqLu8&list=PLESMQx4LeD3N0-KKPPDaToZhBsom2E_Ju&index=3&ab_channel=RichardSchwabe
+- Mongodb:https://www.youtube.com/watch?v=UpsZDGutpZc&ab_channel=TechWithTim
 
  
